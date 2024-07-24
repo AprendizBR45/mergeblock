@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge Blocks</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            grid-gap: 10px;
+        }
+        .block {
+            width: 80px;
+            height: 80px;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .block-0 { background-color: #eee; }
+        .block-2 { background-color: #d6e685; }
+        .block-4 { background-color: #8cc665; }
+        .block-8 { background-color: #44a340; }
+        .block-16 { background-color: #1e6823; }
+        .block-32 { background-color: #196127; }
+        .block-64 { background-color: #ebc534; }
+        .block-128 { background-color: #ebc231; }
+        .block-256 { background-color: #ebc02e; }
+        .block-512 { background-color: #ebbd2b; }
+        .block-1024 { background-color: #ebbb28; }
+        .block-2048 { background-color: #eba725; }
+        .block-4096 { background-color: #eb7c22; }
+        .block-8192 { background-color: #eb521f; }
+    </style>
+</head>
+<body>
+    <div id="game-board"></div>
+    <script>
+        const boardSize = 4;
+        const gameBoard = document.getElementById('game-board');
+        let board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+        let score = 0;
+
+        function createBlock(value) {
+            const block = document.createElement('div');
+            block.className = `block block-${value}`;
+            block.textContent = value > 0 ? value : '';
+            return block;
+        }
+
+        function renderBoard() {
+            gameBoard.innerHTML = '';
+            board.forEach(row => {
+                row.forEach(value => {
+                    gameBoard.appendChild(createBlock(value));
+                });
+            });
+        }
+
+        function addNewBlock() {
+            const emptySpaces = [];
+            board.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value === 0) emptySpaces.push([y, x]);
+                });
+            });
+
+            if (emptySpaces.length === 0) return;
+
+            const [y, x] = emptySpaces[Math.floor(Math.random() * emptySpaces.length)];
+            board[y][x] = 1;
+        }
+
+        function moveBlocks(direction) {
+            let moved = false;
+
+            function slide(row) {
+                const arr = row.filter(val => val);
+                const missing = boardSize - arr.length;
+                const zeros = Array(missing).fill(0);
+                arr.push(...zeros);
+                return arr;
+            }
+
+            function combine(row) {
+                for (let i = 0; i < row.length - 1; i++) {
+                    if (row[i] !== 0 && row[i] === row[i + 1]) {
+                        row[i] *= 2;
+                        row[i + 1] = 0;
+                        score += row[i];
+                    }
+                }
+                return row;
+            }
+
+            for (let i = 0; i < boardSize; i++) {
+                let row = [];
+
+                if (direction === 'up' || direction === 'down') {
+                    row = board.map(r => r[i]);
+                } else {
+                    row = [...board[i]];
+                }
+
+                if (direction === 'right' || direction === 'down') {
+                    row.reverse();
+                }
+
+                const original = [...row];
+                row = slide(combine(slide(row)));
+
+                if (direction === 'right' || direction === 'down') {
+                    row.reverse();
+                }
+
+                if (direction === 'up' || direction === 'down') {
+                    board.forEach((r, idx) => r[i] = row[idx]);
+                } else {
+                    board[i] = row;
+                }
+
+                if (!moved && row.some((val, idx) => val !== original[idx])) {
+                    moved = true;
+                }
+            }
+
+            if (moved) {
+                addNewBlock();
+                renderBoard();
+                checkGameOver();
+            }
+        }
+
+        function checkGameOver() {
+            if (board.flat().every(val => val !== 0)) {
+                alert(`Game Over! Your score is: ${score}`);
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            board = Array.from({ length: boardSize }, () => Array(boardSize).fill(0));
+            score = 0;
+            addNewBlock();
+            renderBoard();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp':
+                    moveBlocks('up');
+                    break;
+                case 'ArrowDown':
+                    moveBlocks('down');
+                    break;
+                case 'ArrowLeft':
+                    moveBlocks('left');
+                    break;
+                case 'ArrowRight':
+                    moveBlocks('right');
+                    break;
+            }
+        });
+
+        addNewBlock();
+        renderBoard();
+    </script>
+</body>
+</html>
